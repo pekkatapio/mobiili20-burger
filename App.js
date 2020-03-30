@@ -1,21 +1,55 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, Image, Dimensions, TouchableOpacity } from 'react-native';
+import * as Font from 'expo-font';
+import { AppLoading } from 'expo';
 
 export default function App() {
+  const [clicks, setClicks] = useState(0);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+  
+  function clickHandler() {
+    setClicks(clicks+1);
+  }
+ 
+  const fetchFonts = () => {
+    return Font.loadAsync({
+      'londrina-regular': require('./assets/fonts/LondrinaSolid-Regular.ttf')
+    });
+  } 
+
+  if (!fontsLoaded) {
+    return (
+      <AppLoading 
+        startAsync={fetchFonts} 
+        onFinish={() => {setFontsLoaded(true)}} />
+    );
+  }
+
   return (
     <View style={styles.container}> 
       <Text style={styles.title}>Burger Clicker</Text>
-      <Stats />
+      <Stats clicks={clicks} />
+      <Burger onClick={clickHandler} /> 
       <Booster />
     </View>
   );
 }
 
-function Stats() {
+function Stats(props) {
   return (
     <View style={styles.stats}>
       <Text style={styles.stats_text}>Burgers</Text>
-      <Text style={styles.stats_value}>147</Text>
+      <Text style={styles.stats_value}>{props.clicks}</Text>
+    </View>
+  );
+}
+
+function Burger(props) {
+  return (
+    <View style={styles.burger}>
+      <TouchableOpacity activeOpacity={0.8} onPress={props.onClick} >
+        <Image style={styles.burger_img} source={require('./assets/burger.png')} resizeMode='contain' />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -46,7 +80,8 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#ccc',
-    fontSize: 50
+    fontSize: 50,
+    fontFamily: 'londrina-regular'
   },
   stats: {
     alignItems: 'flex-end',
@@ -54,15 +89,28 @@ const styles = StyleSheet.create({
   },
   stats_text: {
     color: '#ccc',
-    fontSize: 24
+    fontSize: 24,
+    fontFamily: 'londrina-regular'
   },
   stats_value: {
-    color: '#ccc',
-    fontSize: 48
+    color: '#fff',
+    fontSize: 48,
+    fontFamily: 'londrina-regular'
+  },
+  burger: {
+    width: '100%',
+    
+    flexDirection: 'row',
+    justifyContent: 'center'
+  },
+  burger_img: {
+    width: 0.8*Dimensions.get("window").width,
+    height: 0.8*Dimensions.get("window").width
   },
   booster: {
     color: '#ccc',
-    fontSize: 14
+    fontSize: 14,
+    fontFamily: 'londrina-regular'
   }
 
 });
