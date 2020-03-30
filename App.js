@@ -31,6 +31,7 @@ export default function App() {
       <Stats clicks={clicks} />
       <Burger onClick={clickHandler} /> 
       <Booster />
+      <Menu />
     </View>
   );
 }
@@ -58,6 +59,15 @@ function Booster() {
   return (
     <View>
       <Text style={styles.booster}>1 burger / click</Text>
+    </View>
+  );
+}
+
+function Menu() {
+  return (
+    <View style={styles.menu} >
+      <Image style={styles.menu_img} source={require('./assets/icon-burger.png')} resizeMode='contain' />
+      <Image style={styles.menu_img} source={require('./assets/icon-coupon.png')} resizeMode='contain' />
     </View>
   );
 }
@@ -111,6 +121,17 @@ const styles = StyleSheet.create({
     color: '#ccc',
     fontSize: 14,
     fontFamily: 'londrina-regular'
+  },
+  menu: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly', 
+    width: '100%',
+    height: 0.2*Dimensions.get("window").width,
+    paddingTop: 10
+  },
+  menu_img: {
+    width: '20%',
+    height: '100%'
   }
 
 });
