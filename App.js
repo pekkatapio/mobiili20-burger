@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, Image, Dimensions, TouchableOpacity } from 'react-native';
 import * as Font from 'expo-font';
 import { AppLoading } from 'expo';
+import Constants from 'expo-constants';
 
 export default function App() {
   const [clicks, setClicks] = useState(0);
@@ -27,11 +28,19 @@ export default function App() {
 
   return (
     <View style={styles.container}> 
-      <Text style={styles.title}>Burger Clicker</Text>
-      <Stats clicks={clicks} />
-      <Burger onClick={clickHandler} /> 
-      <Booster />
+      <Game clicks={clicks} clickHandler={clickHandler} />
       <Menu />
+    </View>
+  );
+}
+
+function Game(props) {
+  return (
+    <View style={styles.game}>
+      <Text style={styles.title}>Burger Clicker</Text>
+      <Stats clicks={props.clicks} />
+      <Burger onClick={props.clickHandler} /> 
+      <Booster />
     </View>
   );
 }
@@ -87,6 +96,13 @@ const styles = StyleSheet.create({
     color: '#ccc',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingTop: Constants.statusBarHeight,
+  },
+  game: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'flex-start',
+    alignItems: 'center'
   },
   title: {
     color: '#ccc',
