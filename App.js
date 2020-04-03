@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Image, Dimensions, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, Image, Dimensions, TouchableOpacity, ScrollView, Button } from 'react-native';
 import * as Font from 'expo-font';
 import { AppLoading } from 'expo';
 import Constants from 'expo-constants';
+import { NativeRouter, Link, Route } from 'react-router-native';
+import items from './items.js';
 
 export default function App() {
   const [clicks, setClicks] = useState(0);
@@ -27,10 +29,17 @@ export default function App() {
   }
 
   return (
-    <View style={styles.container}> 
-      <Game clicks={clicks} clickHandler={clickHandler} />
-      <Menu />
-    </View>
+    <NativeRouter>
+      <View style={styles.container}> 
+        <Route exact path='/'>
+          <Game clicks={clicks} clickHandler={clickHandler} />
+        </Route>
+        <Route path='/shop'>
+          <Shop />
+        </Route>
+        <Menu />
+      </View>
+    </NativeRouter>
   );
 }
 
@@ -72,14 +81,42 @@ function Booster() {
   );
 }
 
-function Menu() {
+function Shop(props) {
+
+  let result = items.map((item) => {
+    return (
+      <View style={styles.item} key={item.id} >
+        <Text style={styles.item_text}>{item.desc}</Text>
+        <Button title='OSTA' color='#ffa500' />
+      </View>
+    );
+  });
+
   return (
-    <View style={styles.menu} >
-      <Image style={styles.menu_img} source={require('./assets/icon-burger.png')} resizeMode='contain' />
-      <Image style={styles.menu_img} source={require('./assets/icon-coupon.png')} resizeMode='contain' />
+    <View style={styles.game}>
+      <Text style={styles.title}>Shop</Text>
+      <ScrollView style={styles.shop_items}>
+        {result}
+      </ScrollView>
     </View>
   );
 }
+
+function Menu() {
+  return (
+    <View style={styles.menu} >
+      <Link to='/'>
+        <Text>Game</Text>
+      </Link>
+      <Link to='/shop'>
+        <Text>Shop</Text>
+      </Link>
+    </View>
+  );
+}
+// Kuvat odottamaan, että löytyy, miten ne toimivat Linkin kanssa.. 
+// <Image style={styles.menu_img} source={require('./assets/icon-burger.png')} resizeMode='contain' />
+// <Image style={styles.menu_img} source={require('./assets/icon-coupon.png')} resizeMode='contain' />
 
 // Muokatkaa sovellusta niin, että se tulostaa sivulle seuraavat tekstit:
 //   - Burger Clicker
@@ -101,12 +138,14 @@ const styles = StyleSheet.create({
   game: {
     flex: 1,
     width: '100%',
-    justifyContent: 'flex-start',
-    alignItems: 'center'
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 20,
+    paddingBottom: 20
   },
   title: {
     color: '#ccc',
-    fontSize: 50,
+    fontSize: 0.16*Dimensions.get("window").width,
     fontFamily: 'londrina-regular'
   },
   stats: {
@@ -138,12 +177,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'londrina-regular'
   },
+  shop_items: {
+    flex: 1,
+    paddingTop: 10,
+  },
+  item: {
+    backgroundColor: '#666',
+    borderWidth: 2,
+    padding: 10,
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  item_text: {
+    color: '#ccc'
+  },
   menu: {
     flexDirection: 'row',
     justifyContent: 'space-evenly', 
     width: '100%',
     height: 0.2*Dimensions.get("window").width,
-    paddingTop: 10
+    paddingTop: 10,
+    paddingBottom: 10
   },
   menu_img: {
     width: '20%',
