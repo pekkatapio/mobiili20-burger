@@ -5,10 +5,13 @@ import { AppLoading } from 'expo';
 import Constants from 'expo-constants';
 import { NativeRouter, Link, Route } from 'react-router-native';
 import items from './items.js';
+import { useHistory } from 'react-router-dom';
 
 export default function App() {
   const [clicks, setClicks] = useState(0);
   const [fontsLoaded, setFontsLoaded] = useState(false);
+
+  
   
   function clickHandler() {
     setClicks(clicks+1);
@@ -105,15 +108,24 @@ function Shop(props) {
 function Menu() {
   return (
     <View style={styles.menu} >
-      <Link to='/'>
-        <Text>Game</Text>
-      </Link>
-      <Link to='/shop'>
-        <Text>Shop</Text>
-      </Link>
+      <MenuItem to='/' icon={require('./assets/icon-burger.png')} />
+      <MenuItem to='/shop' icon={require('./assets/icon-coupon.png')} />
     </View>
   );
 }
+
+function MenuItem(props) {
+  let history = useHistory();
+  return (
+    <TouchableOpacity onPress={() => {history.push(props.to)}}>
+      <Image style={styles.menu_img} 
+             source={props.icon} 
+             resizeMode='contain' /> 
+    </TouchableOpacity>
+  );
+}
+
+
 // Kuvat odottamaan, että löytyy, miten ne toimivat Linkin kanssa.. 
 // <Image style={styles.menu_img} source={require('./assets/icon-burger.png')} resizeMode='contain' />
 // <Image style={styles.menu_img} source={require('./assets/icon-coupon.png')} resizeMode='contain' />
