@@ -10,11 +10,11 @@ const items = [
   { id:   'storage',
     name: 'Varasto',
     desc: 'Isompi varasto, enemmän asiakkaita..',
-    price: 500,
+    price: 175,
     click: 1,
     level: 1,
-    factorPrice: 1.14,
-    factorClick: 1.05}     
+    factorPrice: 1.15,
+    factorClick: 1.15}     
 ];
 
 export default items;

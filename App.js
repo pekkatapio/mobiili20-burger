@@ -6,6 +6,7 @@ import Constants from 'expo-constants';
 import { NativeRouter, Link, Route } from 'react-router-native';
 import items from './items.js';
 import { useHistory } from 'react-router-dom';
+import { render } from 'react-dom';
 
 export default function App() {
   const [clicks, setClicks] = useState(49);
@@ -116,9 +117,20 @@ function Shop(props) {
   let result = props.items.map((item, index) => {
     return (
       <View style={styles.item} key={item.id} >
-        <Text style={styles.item_text}>{item.name}</Text>
-        <Text style={styles.item_text}>{item.desc}</Text>
+
+        <View style={styles.item_groupName}>
+          <Text style={styles.item_title}>{item.name}</Text>
+          <Text style={styles.item_text}>{item.desc}</Text>
+        </View>
+
+        
         <Text style={styles.item_text}>Level: {item.level}</Text>
+
+        <ShopButton onPress={() => {props.buttonHandler(index)}} >
+           <Text>{item.price}</Text>
+           <Text>UPGRADE</Text>
+        </ShopButton> 
+
         <Text style={styles.item_text}>Hinta {item.price} burgeria</Text>
         <Button title='OSTA' 
                 color='#ffa500' 
@@ -135,6 +147,16 @@ function Shop(props) {
         {result}
       </ScrollView>
     </View>
+  );
+}
+
+function ShopButton(props) {
+  return (
+    <TouchableOpacity onPress={props.onPress} >
+      <View style={styles.shopbutton}>
+        {props.children}
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -235,9 +257,14 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     padding: 10,
     marginBottom: 10,
-    flexDirection: 'column',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
+  },
+  item_title: {
+    color: '#ccc',
+    fontFamily: 'londrina-regular',
+    fontSize: 0.07 * Dimensions.get("window").width
   },
   item_text: {
     color: '#ccc'
