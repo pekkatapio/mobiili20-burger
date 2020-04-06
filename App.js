@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Image, Dimensions, TouchableOpacity, ScrollView, Button } from 'react-native';
 import * as Font from 'expo-font';
 import { AppLoading } from 'expo';
@@ -8,15 +8,41 @@ import items from './items.js';
 import { useHistory } from 'react-router-dom';
 
 export default function App() {
-  const [clicks, setClicks] = useState(0);
+  const [clicks, setClicks] = useState(49);
   const [fontsLoaded, setFontsLoaded] = useState(false);
-
-  
+  const [gameItems, setGameItems] = useState(items);
+  const [clickValue, setClickValue] = useState(1);
   
   function clickHandler() {
-    setClicks(clicks+1);
+    setClicks(clicks + clickValue);
   }
+
+  /*
+  useEffect(() => {
+    let result = 1;
+    for (let i=0; i<gameItems.length; i++) {
+      result = result * gameItems[i].click;
+    }
+    setClickValue(result);
+  }, [gameItems]);  
+  */
  
+  function upgradeButtonHandler(index) {
+    const originalPrice = gameItems[index].price;
+    gameItems[index].price = Math.floor(originalPrice * gameItems[index].factorPrice);
+    gameItems[index].level = gameItems[index].level + 1;
+    gameItems[index].click = gameItems[index].click * gameItems[index].factorClick;
+    
+    let result = 1;
+    for (let i=0; i<gameItems.length; i++) {
+      result = result * gameItems[i].click;
+    }
+    setClickValue(result);
+
+    setGameItems(gameItems);
+    setClicks(clicks - originalPrice);
+  }
+
   const fetchFonts = () => {
     return Font.loadAsync({
       'londrina-regular': require('./assets/fonts/LondrinaSolid-Regular.ttf')
@@ -35,10 +61,11 @@ export default function App() {
     <NativeRouter>
       <View style={styles.container}> 
         <Route exact path='/'>
-          <Game clicks={clicks} clickHandler={clickHandler} />
+          <Game clicks={clicks} clickHandler={clickHandler} clickValue={clickValue} />
         </Route>
         <Route path='/shop'>
-          <Shop />
+          <Shop items={gameItems} clicks={clicks} 
+                buttonHandler={upgradeButtonHandler} />
         </Route>
         <Menu />
       </View>
@@ -52,7 +79,7 @@ function Game(props) {
       <Text style={styles.title}>Burger Clicker</Text>
       <Stats clicks={props.clicks} />
       <Burger onClick={props.clickHandler} /> 
-      <Booster />
+      <Booster clickValue={props.clickValue} />
     </View>
   );
 }
@@ -61,7 +88,7 @@ function Stats(props) {
   return (
     <View style={styles.stats}>
       <Text style={styles.stats_text}>Burgers</Text>
-      <Text style={styles.stats_value}>{props.clicks}</Text>
+      <Text style={styles.stats_value}>{Math.floor(props.clicks)}</Text>
     </View>
   );
 }
@@ -76,21 +103,27 @@ function Burger(props) {
   );
 }
 
-function Booster() {
+function Booster(props) {
   return (
     <View>
-      <Text style={styles.booster}>1 burger / click</Text>
+      <Text style={styles.booster}>{props.clickValue} burger / click</Text>
     </View>
   );
 }
 
 function Shop(props) {
 
-  let result = items.map((item) => {
+  let result = props.items.map((item, index) => {
     return (
       <View style={styles.item} key={item.id} >
+        <Text style={styles.item_text}>{item.name}</Text>
         <Text style={styles.item_text}>{item.desc}</Text>
-        <Button title='OSTA' color='#ffa500' />
+        <Text style={styles.item_text}>Level: {item.level}</Text>
+        <Text style={styles.item_text}>Hinta {item.price} burgeria</Text>
+        <Button title='OSTA' 
+                color='#ffa500' 
+                disabled={item.price > props.clicks} 
+                onPress={() => {props.buttonHandler(index)}} />
       </View>
     );
   });
@@ -117,11 +150,14 @@ function Menu() {
 function MenuItem(props) {
   let history = useHistory();
   return (
-    <TouchableOpacity onPress={() => {history.push(props.to)}}>
+    
+    <TouchableOpacity onPress={() => {history.push(props.to)}} 
+                      style={styles.menuitem} >
       <Image style={styles.menu_img} 
              source={props.icon} 
              resizeMode='contain' /> 
     </TouchableOpacity>
+    
   );
 }
 
@@ -192,13 +228,14 @@ const styles = StyleSheet.create({
   shop_items: {
     flex: 1,
     paddingTop: 10,
+    flexDirection: 'column'
   },
   item: {
     backgroundColor: '#666',
     borderWidth: 2,
     padding: 10,
     marginBottom: 10,
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'space-between',
     alignItems: 'center'
   },
@@ -213,8 +250,12 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 10
   },
-  menu_img: {
+  menuitem: {
     width: '20%',
+    height: '100%'
+  },
+  menu_img: {
+    width: '100%',
     height: '100%'
   }
 
