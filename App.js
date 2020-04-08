@@ -6,7 +6,7 @@ import Constants from 'expo-constants';
 import { NativeRouter, Link, Route } from 'react-router-native';
 import items from './items.js';
 import { useHistory } from 'react-router-dom';
-import { render } from 'react-dom';
+import { AsyncStorage } from 'react-native';
 
 export default function App() {
   const [clicks, setClicks] = useState(49);
@@ -14,9 +14,52 @@ export default function App() {
   const [gameItems, setGameItems] = useState(items);
   const [clickValue, setClickValue] = useState(1);
   
-  function clickHandler() {
-    setClicks(clicks + clickValue);
+  async function clickHandler() {
+    const newClicks = clicks + clickValue;
+    setClicks(newClicks);
+    storeClicks(newClicks+'');
   }
+
+  async function getClicks() {
+    const clicks = parseFloat(await AsyncStorage.getItem('clicks'));
+    return clicks;
+  }
+
+  async function getItems() {
+    const items = JSON.parse(await AsyncStorage.getItem('items'));
+    return items;
+  }
+
+  async function storeClicks(clicks) {
+    await AsyncStorage.setItem('clicks', clicks);
+  }
+
+  async function storeItems(items) {
+    await AsyncStorage.setItem('items', JSON.stringify(items));
+  }
+
+  useEffect(() => {
+    async function fetchData() {
+      const clicks = await getClicks();
+      if (clicks) {
+        setClicks(clicks);
+        console.log(clicks);
+      } else {
+        setClicks(0);
+        console.log("Alusta alkaa..");
+      }
+      const storedItems = await getItems();
+      if (storedItems) {
+        let result = 1;
+        for (let i=0; i<storedItems.length; i++) {
+          result = result * storedItems[i].click;
+        }
+        setClickValue(result);        
+        setGameItems(storedItems);
+      } 
+    } 
+    fetchData();
+  }, []);
 
   /*
   useEffect(() => {
@@ -41,7 +84,18 @@ export default function App() {
     setClickValue(result);
 
     setGameItems(gameItems);
+    storeItems(gameItems);
+
     setClicks(clicks - originalPrice);
+    storeClicks((clicks - originalPrice)+'');
+  }
+
+  function resetHandler() {
+    setClicks(0);
+    storeClicks('0');
+    setGameItems(items);
+    storeItems(items);
+    setClickValue(1);
   }
 
   const fetchFonts = () => {
@@ -66,7 +120,8 @@ export default function App() {
         </Route>
         <Route path='/shop'>
           <Shop items={gameItems} clicks={clicks} 
-                buttonHandler={upgradeButtonHandler} />
+                buttonHandler={upgradeButtonHandler} 
+                resetGame={resetHandler} />
         </Route>
         <Menu />
       </View>
@@ -107,7 +162,7 @@ function Burger(props) {
 function Booster(props) {
   return (
     <View>
-      <Text style={styles.booster}>{props.clickValue} burger / click</Text>
+      <Text style={styles.booster}>{props.clickValue.toFixed(2)} burger / click</Text>
     </View>
   );
 }
@@ -119,23 +174,19 @@ function Shop(props) {
       <View style={styles.item} key={item.id} >
 
         <View style={styles.item_groupName}>
-          <Text style={styles.item_title}>{item.name}</Text>
+          <View style={styles.item_titlerow}>
+            <Text style={styles.item_title}>{item.name}</Text>
+            <Text style={styles.item_level}>(level {item.level})</Text>
+          </View>
           <Text style={styles.item_text}>{item.desc}</Text>
         </View>
 
-        
-        <Text style={styles.item_text}>Level: {item.level}</Text>
-
-        <ShopButton onPress={() => {props.buttonHandler(index)}} >
-           <Text>{item.price}</Text>
-           <Text>UPGRADE</Text>
+        <ShopButton onPress={() => {props.buttonHandler(index)}} 
+                    disabled={item.price > props.clicks} >
+           <Text style={styles.upgrade_price}>{item.price}</Text>
+           <Text style={styles.upgrade_action}>UPGRADE</Text>
         </ShopButton> 
 
-        <Text style={styles.item_text}>Hinta {item.price} burgeria</Text>
-        <Button title='OSTA' 
-                color='#ffa500' 
-                disabled={item.price > props.clicks} 
-                onPress={() => {props.buttonHandler(index)}} />
       </View>
     );
   });
@@ -145,6 +196,7 @@ function Shop(props) {
       <Text style={styles.title}>Shop</Text>
       <ScrollView style={styles.shop_items}>
         {result}
+        <Button title="RESET" onPress={props.resetGame} />
       </ScrollView>
     </View>
   );
@@ -152,6 +204,10 @@ function Shop(props) {
 
 function ShopButton(props) {
   return (
+    props.disabled ?
+    <View style={styles.shopbutton} opacity={0.3}>
+      {props.children}
+    </View> :
     <TouchableOpacity onPress={props.onPress} >
       <View style={styles.shopbutton}>
         {props.children}
@@ -261,13 +317,50 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center'
   },
+  item_groupName: {
+    width: '75%' 
+  },
   item_title: {
-    color: '#ccc',
+    color: '#fff',
     fontFamily: 'londrina-regular',
     fontSize: 0.07 * Dimensions.get("window").width
   },
   item_text: {
-    color: '#ccc'
+    color: '#ccc',
+    fontFamily: 'londrina-regular'
+  },
+  item_titlerow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start'
+  },
+  item_level: {
+    color: '#ccc',
+    marginLeft: 5,
+    fontFamily: 'londrina-regular'
+  },
+  shopbutton: {
+    backgroundColor: '#ffa500',
+    padding: 5,
+    borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  shopbutton_disabled: {
+    backgroundColor: '#666',
+    padding: 5,
+    borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },  
+  upgrade_price: {
+    color: '#fff',
+    fontFamily: 'londrina-regular',
+    fontSize: 0.07 * Dimensions.get("window").width
+  },
+  upgrade_action: {
+    color: '#fff',
+    fontFamily: 'londrina-regular'
   },
   menu: {
     flexDirection: 'row',
