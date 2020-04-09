@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Image, Dimensions, TouchableOpacity, ScrollView, Button } from 'react-native';
+import { StyleSheet, Text, View, Image, Dimensions, TouchableOpacity, TextInput, ScrollView, Button, Modal } from 'react-native';
 import * as Font from 'expo-font';
 import { AppLoading } from 'expo';
 import Constants from 'expo-constants';
@@ -7,22 +7,32 @@ import { NativeRouter, Link, Route } from 'react-router-native';
 import items from './items.js';
 import { useHistory } from 'react-router-dom';
 import { AsyncStorage } from 'react-native';
+import { scale, verticalScale, moderateScale } from './scaling_utils';
 
 export default function App() {
-  const [clicks, setClicks] = useState(49);
+  const [clicks, setClicks] = useState(0);
+  const [totalClicks, setTotalClicks] = useState(0);
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [gameItems, setGameItems] = useState(items);
   const [clickValue, setClickValue] = useState(1);
   
   async function clickHandler() {
     const newClicks = clicks + clickValue;
+    const newTotalClicks = totalClicks + 1;
     setClicks(newClicks);
+    setTotalClicks(newTotalClicks);
     storeClicks(newClicks+'');
+    storeTotalClicks(newTotalClicks+'');
   }
 
   async function getClicks() {
     const clicks = parseFloat(await AsyncStorage.getItem('clicks'));
     return clicks;
+  }
+
+  async function getTotalClicks() {
+    const totalclicks = parseInt(await AsyncStorage.getItem('totalclicks'));
+    return totalclicks;
   }
 
   async function getItems() {
@@ -34,6 +44,10 @@ export default function App() {
     await AsyncStorage.setItem('clicks', clicks);
   }
 
+  async function storeTotalClicks(totalclicks) {
+    await AsyncStorage.setItem('totalclicks', totalclicks);
+  }
+
   async function storeItems(items) {
     await AsyncStorage.setItem('items', JSON.stringify(items));
   }
@@ -43,10 +57,14 @@ export default function App() {
       const clicks = await getClicks();
       if (clicks) {
         setClicks(clicks);
-        console.log(clicks);
       } else {
         setClicks(0);
-        console.log("Alusta alkaa..");
+      }
+      const totalclicks = await getTotalClicks();
+      if (totalclicks) {
+        setTotalClicks(totalclicks);
+      } else {
+        setTotalClicks(0);
       }
       const storedItems = await getItems();
       if (storedItems) {
@@ -96,6 +114,8 @@ export default function App() {
     setGameItems(items);
     storeItems(items);
     setClickValue(1);
+    setTotalClicks(0);
+    storeTotalClicks('0');
   }
 
   const fetchFonts = () => {
@@ -122,6 +142,9 @@ export default function App() {
           <Shop items={gameItems} clicks={clicks} 
                 buttonHandler={upgradeButtonHandler} 
                 resetGame={resetHandler} />
+        </Route>
+        <Route path='/settings'>
+          <Settings resetGame={resetHandler} totalClicks={totalClicks} clicks={clicks} />
         </Route>
         <Menu />
       </View>
@@ -168,10 +191,12 @@ function Booster(props) {
 }
 
 function Shop(props) {
+  const [modalVisible, setModalVisible] = useState(false);
 
   let result = props.items.map((item, index) => {
     return (
       <View style={styles.item} key={item.id} >
+
 
         <View style={styles.item_groupName}>
           <View style={styles.item_titlerow}>
@@ -196,8 +221,68 @@ function Shop(props) {
       <Text style={styles.title}>Shop</Text>
       <ScrollView style={styles.shop_items}>
         {result}
-        <Button title="RESET" onPress={props.resetGame} />
       </ScrollView>
+    </View>
+  );
+}
+
+function Settings(props) {
+  const [modalVisible, setModalVisible] = useState(false);
+  const value = props.totalClicks % 1000;
+  const [inputvalue, setInputvalue] = useState('');
+
+  return (
+    <View style={styles.game}>
+      <Text style={styles.title}>Settings</Text>
+      <View style={styles.shop_items}>
+
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setInputvalue('');
+          setModalVisible(false);
+        }}>
+        <View style={styles.resetmodal}>
+          
+            <Text style={styles.title}>Reset game</Text>
+
+            <Text style={styles.settings_text}>Do you really want to reset the game?</Text>
+            <Text style={styles.settings_text}>If you are, please type value {value} in text box below.</Text>
+            <TextInput style={styles.resetmodal_input} 
+                       value={inputvalue} 
+                       onChangeText={(text) => {setInputvalue(text)}} 
+                       textAlign='center' />
+            
+            <View style={styles.settings_button}>
+              <Button color={buttoncolor} 
+                      title="RESET GAME" 
+                      onPress={() => { 
+                        props.resetGame(); 
+                        setInputvalue('');
+                        setModalVisible(false); 
+                      }} 
+                      disabled={value.toString() != inputvalue} />
+            </View>
+            <View style={styles.settings_button}>
+              <Button color={buttoncolor} title="CANCEL" onPress={() => {
+                setModalVisible(!modalVisible);
+                setInputvalue('');
+              }}
+              />
+            </View>
+          
+        </View>
+      </Modal>
+
+        <Text style={styles.settings_text}>Total clicks clicked: {props.totalClicks}</Text>
+        <Text style={styles.settings_text}>Burgers: {Math.floor(props.clicks)}</Text>
+      
+        <View style={styles.settings_button}>
+          <Button title="RESET GAME" color={buttoncolor} onPress={() => {setModalVisible(true)}} />
+        </View>
+        </View>
     </View>
   );
 }
@@ -221,6 +306,7 @@ function Menu() {
     <View style={styles.menu} >
       <MenuItem to='/' icon={require('./assets/icon-burger.png')} />
       <MenuItem to='/shop' icon={require('./assets/icon-coupon.png')} />
+      <MenuItem to='/settings' icon={require('./assets/icon-settings.png')} />
     </View>
   );
 }
@@ -240,23 +326,32 @@ function MenuItem(props) {
 }
 
 
-// Kuvat odottamaan, että löytyy, miten ne toimivat Linkin kanssa.. 
-// <Image style={styles.menu_img} source={require('./assets/icon-burger.png')} resizeMode='contain' />
-// <Image style={styles.menu_img} source={require('./assets/icon-coupon.png')} resizeMode='contain' />
+/* ------------- Tyylimääritykset ------------- */
 
-// Muokatkaa sovellusta niin, että se tulostaa sivulle seuraavat tekstit:
-//   - Burger Clicker
-//   - Burgers
-//   - 1 burger / click
-//
-// Muokkaa myös sivun ulkoasua niin, että sivun taustaväri on tumman harmaa ja 
-// tekstin väri on vaalean harmaa. Tekstin värin pystyi määrittelemään color-määreellä.
+const sizeFactor = Dimensions.get("window").height / Dimensions.get("window").width;
+
+const darkbg = '#333';
+const mediumbg = '#666';
+const lighttext = '#ccc';
+const brighttext = '#fff';
+const mainfont = 'londrina-regular';
+const buttoncolor = '#ffa500';
+const scaleToScreen = (size) => {
+  const widthSize = Math.round((factor/50*0.16) * Dimensions.get("window").width);
+}
+const scaleToWidth = (factor) => Math.round((factor/50*0.16) * Dimensions.get("window").width);
+console.log("------");
+console.log(Dimensions.get("window").width);
+console.log(Dimensions.get("window").height);
+console.log(scaleToWidth(50));
+console.log(sizeFactor);
+console.log("------");
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#333',
-    color: '#ccc',
+    backgroundColor: darkbg,
+    color: lighttext,
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: Constants.statusBarHeight,
@@ -266,27 +361,27 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 20,
-    paddingBottom: 20
+    paddingTop: scaleToWidth(20),
+    paddingBottom: scaleToWidth(20)
   },
   title: {
-    color: '#ccc',
-    fontSize: 0.16*Dimensions.get("window").width,
-    fontFamily: 'londrina-regular'
+    color: lighttext,
+    fontSize: moderateScale(55),
+    fontFamily: mainfont
   },
   stats: {
     alignItems: 'flex-end',
     width: '80%'
   },
   stats_text: {
-    color: '#ccc',
-    fontSize: 24,
-    fontFamily: 'londrina-regular'
+    color: lighttext,
+    fontSize: moderateScale(24),
+    fontFamily: mainfont
   },
   stats_value: {
-    color: '#fff',
-    fontSize: 48,
-    fontFamily: 'londrina-regular'
+    color: brighttext,
+    fontSize: moderateScale(48),
+    fontFamily: mainfont
   },
   burger: {
     width: '100%',
@@ -295,24 +390,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   burger_img: {
-    width: 0.8*Dimensions.get("window").width,
-    height: 0.8*Dimensions.get("window").width
+    width: moderateScale(250),
+    height: moderateScale(250)
   },
   booster: {
-    color: '#ccc',
-    fontSize: 14,
-    fontFamily: 'londrina-regular'
+    color: lighttext,
+    fontSize: moderateScale(14),
+    fontFamily: mainfont
   },
   shop_items: {
     flex: 1,
-    paddingTop: 10,
+    paddingTop: moderateScale(10),
     flexDirection: 'column'
   },
   item: {
-    backgroundColor: '#666',
+    backgroundColor: mediumbg,
     borderWidth: 2,
-    padding: 10,
-    marginBottom: 10,
+    padding: moderateScale(10),
+    marginBottom: moderateScale(10),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
@@ -321,13 +416,14 @@ const styles = StyleSheet.create({
     width: '75%' 
   },
   item_title: {
-    color: '#fff',
-    fontFamily: 'londrina-regular',
-    fontSize: 0.07 * Dimensions.get("window").width
+    color: brighttext,
+    fontFamily: mainfont,
+    fontSize: moderateScale(24)
   },
   item_text: {
-    color: '#ccc',
-    fontFamily: 'londrina-regular'
+    color: lighttext,
+    fontFamily: mainfont,
+    fontSize: moderateScale(16)
   },
   item_titlerow: {
     flexDirection: 'row',
@@ -335,40 +431,66 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start'
   },
   item_level: {
-    color: '#ccc',
+    color: lighttext,
     marginLeft: 5,
-    fontFamily: 'londrina-regular'
+    fontFamily: mainfont,
+    fontSize: moderateScale(16)
   },
   shopbutton: {
-    backgroundColor: '#ffa500',
+    backgroundColor: buttoncolor,
     padding: 5,
     borderRadius: 5,
     justifyContent: 'center',
     alignItems: 'center'
   },
   shopbutton_disabled: {
-    backgroundColor: '#666',
+    backgroundColor: mediumbg,
     padding: 5,
     borderRadius: 5,
     justifyContent: 'center',
     alignItems: 'center'
   },  
   upgrade_price: {
-    color: '#fff',
-    fontFamily: 'londrina-regular',
-    fontSize: 0.07 * Dimensions.get("window").width
+    color: brighttext,
+    fontFamily: mainfont,
+    fontSize: scaleToWidth(16)
   },
   upgrade_action: {
-    color: '#fff',
-    fontFamily: 'londrina-regular'
+    color: brighttext,
+    fontFamily: mainfont
+  },
+  settings_text: {
+    color: lighttext,
+    fontFamily: mainfont,
+    fontSize: moderateScale(20),
+    marginBottom: moderateScale(5)
+  },
+  settings_button: {
+    marginTop: moderateScale(20)
+  },
+  resetmodal: {
+    backgroundColor: darkbg,
+    flex: 1,
+    padding: moderateScale(20),
+    alignItems: 'center'
+  },
+  resetmodal_input: {
+    backgroundColor: mediumbg,
+    borderColor: lighttext,
+    borderWidth: 1,
+    width: '50%',
+    color: lighttext,
+    fontFamily: mainfont,
+    fontSize: moderateScale(25),
+    padding: moderateScale(5)
   },
   menu: {
     flexDirection: 'row',
     justifyContent: 'space-evenly', 
     width: '100%',
-    height: 0.2*Dimensions.get("window").width,
-    paddingTop: 10,
-    paddingBottom: 10
+    height: verticalScale(90),
+    paddingTop: moderateScale(10),
+    paddingBottom: moderateScale(10)
   },
   menuitem: {
     width: '20%',
