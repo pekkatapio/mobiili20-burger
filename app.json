@@ -1,11 +1,10 @@
 {
   "expo": {
-    "name": "Blank Template",
-    "slug": "ekatesti",
+    "name": "Burger Clicker",
+    "slug": "burgerclicker",
     "privacy": "public",
     "sdkVersion": "36.0.0",
     "platforms": [
-      "ios",
       "android",
       "web"
     ],
@@ -13,9 +12,9 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splash2.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#E6B238"
     },
     "updates": {
       "fallbackToCacheTimeout": 0
@@ -24,7 +23,14 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
-    }
+      "supportsTablet": true,
+      "bundleIdentifier": "fi.kurpitsa.burgerclicker",
+      "buildNumber": "1.0.0"
+    },
+    "android": {
+      "package": "fi.kurpitsa.burgerclicker",
+      "versionCode": 1
+    },
+    "description": ""
   }
 }
